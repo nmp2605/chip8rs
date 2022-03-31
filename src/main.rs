@@ -1,4 +1,6 @@
+mod cpu;
 mod memory;
+mod motherboard;
 
 use std::fs;
 use std::env;
@@ -14,4 +16,6 @@ fn main() {
 
     let contents: Vec<u8> = fs::read(rom_path)
         .expect("The file path is invalid.");
+
+    
 }
