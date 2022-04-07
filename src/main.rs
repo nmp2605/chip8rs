@@ -1,7 +1,9 @@
 mod cpu;
+mod instruction;
 mod memory;
 mod motherboard;
 
+use motherboard::Motherboard;
 use std::fs;
 use std::env;
 
@@ -14,8 +16,9 @@ fn main() {
 
     let rom_path: &String = &args[0];
 
-    let contents: Vec<u8> = fs::read(rom_path)
+    let program: Vec<u8> = fs::read(rom_path)
         .expect("The file path is invalid.");
 
-    
+    Motherboard::initialize()
+        .emulate(program);
 }

@@ -1,9 +1,12 @@
+use crate::instruction::Instruction;
+use crate::memory::Memory;
+
 pub struct Cpu {
-    v_registers: [u8; 0xF],
+    v_registers: [u8; 16],
     i_register: u16,
     delay_timer: u8,
     sound_timer: u8,
-    program_counter: u16,
+    program_counter: usize,
     stack_empty: bool,
     stack_pointer: usize,
     stack: [u16; 0xF],
@@ -12,7 +15,7 @@ pub struct Cpu {
 impl Cpu {
     pub fn initialize() -> Cpu {
         Cpu {
-            v_registers: [0x0; 0xF],
+            v_registers: [0x0; 16],
             i_register: 0x0,
             delay_timer: 0x0,
             sound_timer: 0x0,
@@ -23,12 +26,29 @@ impl Cpu {
         }
     }
 
-    pub fn increase_program_counter(&mut self, amount: u16) {
+    pub fn fetch_and_decode(&mut self, memory: &Memory) {
+        let first_byte: u8 = memory.get(self.program_counter);
+
+        self.increase_program_counter(0x2);
+
+        let second_byte: u8 = memory.get(self.program_counter);
+
+        self.increase_program_counter(0x2);
+
+        Instruction::initialize(first_byte, second_byte)
+            .interpret(self);
+    }
+
+    pub fn increase_program_counter(&mut self, amount: usize) {
         self.program_counter += amount;
     }
 
-    pub fn set_program_counter(&mut self, value: u16) {
+    pub fn set_program_counter(&mut self, value: usize) {
         self.program_counter = value;
+    }
+
+    pub fn get_program_counter(&self) -> usize {
+        self.program_counter
     }
 
     pub fn stack_push(&mut self, value: u16) {
@@ -50,7 +70,7 @@ impl Cpu {
             panic!("The CPU has a stack underflow.");
         }
 
-        let stackValue: u16 = self.stack[self.stack_pointer];
+        let stack_value: u16 = self.stack[self.stack_pointer];
 
         self.stack[self.stack_pointer] = 0x0;
 
@@ -60,14 +80,14 @@ impl Cpu {
             self.stack_pointer -= 1;
         }
 
-        stackValue
+        stack_value
     }
 
     pub fn set_v_register(&mut self, register: usize, value: u8) {
         self.v_registers[register] = value;
     }
 
-    pub fn get_v_register(self, register: usize) -> u8 {
+    pub fn get_v_register(&self, register: usize) -> u8 {
         self.v_registers[register]
     }
 
@@ -75,7 +95,7 @@ impl Cpu {
         self.i_register = value;
     }
 
-    pub fn get_i_register(self) -> u16 {
+    pub fn get_i_register(&self) -> u16 {
         self.i_register
     }
 
@@ -83,7 +103,7 @@ impl Cpu {
         self.delay_timer = value;
     }
 
-    pub fn get_delay_timer(self) -> u8 {
+    pub fn get_delay_timer(&self) -> u8 {
         self.delay_timer
     }
 
@@ -91,7 +111,7 @@ impl Cpu {
         self.sound_timer = value;
     }
 
-    pub fn get_sound_timer(self) -> u8 {
+    pub fn get_sound_timer(&self) -> u8 {
         self.sound_timer
     }
 }
@@ -104,7 +124,7 @@ mod tests {
     fn it_should_initialize_the_cpu() {
         let cpu: Cpu = Cpu::initialize();
 
-        assert_eq!([0x0; 0xF], cpu.v_registers);
+        assert_eq!([0x0; 16], cpu.v_registers);
         assert_eq!(0x0, cpu.i_register);
         assert_eq!(0x0, cpu.delay_timer);
         assert_eq!(0x0, cpu.sound_timer);
@@ -129,6 +149,15 @@ mod tests {
         cpu.set_program_counter(0x5AA);
 
         assert_eq!(0x5AA, cpu.program_counter);
+    }
+
+    #[test]
+    fn it_should_get_a_value_from_the_program_counter() {
+        let mut cpu: Cpu = Cpu::initialize();
+
+        cpu.program_counter = 0xAAA;
+
+        assert_eq!(0xAAA, cpu.get_program_counter());
     }
 
     #[test]
