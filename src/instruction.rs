@@ -28,9 +28,9 @@ impl Instruction {
             0x7000 => self.add_argument_value_to_v_register(cpu),
             0x8000 => match self.opcode & 0xF00F {
                 0x8000 => self.put_v_register_value_on_other_v_register(cpu),
-            //     0x8001 => self.storeValueOfBitwiseOrBetweenRegistersOnFirstPassedRegister(cpu),
-            //     0x8002 => self.storeValueOfBitwiseAndBetweenRegistersOnFirstPassedRegister(cpu),
-            //     0x8003 => self.storeValueOfBitwiseXorBetweenRegistersOnFirstPassedRegister(cpu),
+                0x8001 => self.put_value_of_bitwise_or_operation_between_v_registers_on_first_passed_register(cpu),
+                0x8002 => self.put_value_of_bitwise_and_operation_between_v_registers_on_first_passed_register(cpu),
+                0x8003 => self.put_value_of_bitwise_xor_operation_between_v_registers_on_first_passed_register(cpu),
             //     0x8004 => self.storeValueOfSumBetweenRegistersOnFirstPassedRegister(cpu),
             //     0x8005 => self.storeValueOfSubtractionBetweenRegistersOnFirstPassedRegister(cpu),
             //     0x8006 => self.storeValueOfBitwiseShiftRightBetweenRegistersOnFirstPassedRegister(cpu),
@@ -150,6 +150,51 @@ impl Instruction {
         cpu.set_v_register(
             first_register_number, 
             cpu.get_v_register(second_register_number)
+        );
+    }
+
+    fn put_value_of_bitwise_or_operation_between_v_registers_on_first_passed_register(&self, cpu: &mut Cpu) {
+        println!("put_value_of_bitwise_or_operation_between_v_registers_on_first_passed_register");
+
+        let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
+        let second_register_number: usize = (self.opcode as usize) >> 4 & 0x000F;
+
+        let first_register_value: u8 = cpu.get_v_register(first_register_number);
+        let second_register_value: u8 = cpu.get_v_register(second_register_number);
+
+        cpu.set_v_register(
+            first_register_number, 
+            first_register_value | second_register_value
+        );
+    }
+
+    fn put_value_of_bitwise_and_operation_between_v_registers_on_first_passed_register(&self, cpu: &mut Cpu) {
+        println!("put_value_of_bitwise_and_operation_between_v_registers_on_first_passed_register");
+
+        let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
+        let second_register_number: usize = (self.opcode as usize) >> 4 & 0x000F;
+
+        let first_register_value: u8 = cpu.get_v_register(first_register_number);
+        let second_register_value: u8 = cpu.get_v_register(second_register_number);
+
+        cpu.set_v_register(
+            first_register_number, 
+            first_register_value & second_register_value
+        );
+    }
+
+    fn put_value_of_bitwise_xor_operation_between_v_registers_on_first_passed_register(&self, cpu: &mut Cpu) {
+        println!("put_value_of_bitwise_xor_operation_between_v_registers_on_first_passed_register");
+
+        let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
+        let second_register_number: usize = (self.opcode as usize) >> 4 & 0x000F;
+
+        let first_register_value: u8 = cpu.get_v_register(first_register_number);
+        let second_register_value: u8 = cpu.get_v_register(second_register_number);
+
+        cpu.set_v_register(
+            first_register_number, 
+            first_register_value ^ second_register_value
         );
     }
 }
@@ -299,5 +344,44 @@ mod tests {
         instruction.interpret(&mut cpu);
 
         assert_eq!(0xFE, cpu.get_v_register(0xA));
+    }
+
+    #[test]
+    fn it_should_put_value_of_bitwise_or_operation_between_v_registers_on_first_passed_register() {
+        let mut instruction: Instruction = Instruction::initialize(0x8A, 0xC1);
+        let mut cpu: Cpu = Cpu::initialize();
+
+        cpu.set_v_register(0xA, 0b10101010);
+        cpu.set_v_register(0xC, 0b11110000);
+
+        instruction.interpret(&mut cpu);
+
+        assert_eq!(0b11111010, cpu.get_v_register(0xA));
+    }
+
+    #[test]
+    fn it_should_put_value_of_bitwise_and_operation_between_v_registers_on_first_passed_register() {
+        let mut instruction: Instruction = Instruction::initialize(0x8A, 0xC2);
+        let mut cpu: Cpu = Cpu::initialize();
+
+        cpu.set_v_register(0xA, 0b10101010);
+        cpu.set_v_register(0xC, 0b11110000);
+
+        instruction.interpret(&mut cpu);
+
+        assert_eq!(0b10100000, cpu.get_v_register(0xA));
+    }
+
+    #[test]
+    fn it_should_put_value_of_bitwise_xor_operation_between_v_registers_on_first_passed_register() {
+        let mut instruction: Instruction = Instruction::initialize(0x8A, 0xC3);
+        let mut cpu: Cpu = Cpu::initialize();
+
+        cpu.set_v_register(0xA, 0b10101010);
+        cpu.set_v_register(0xC, 0b11110000);
+
+        instruction.interpret(&mut cpu);
+
+        assert_eq!(0b01011010, cpu.get_v_register(0xA));
     }
 }
