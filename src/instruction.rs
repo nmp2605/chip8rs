@@ -31,11 +31,11 @@ impl Instruction {
                 0x8001 => self.put_value_of_bitwise_or_operation_between_v_registers_on_first_passed_register(cpu),
                 0x8002 => self.put_value_of_bitwise_and_operation_between_v_registers_on_first_passed_register(cpu),
                 0x8003 => self.put_value_of_bitwise_xor_operation_between_v_registers_on_first_passed_register(cpu),
-            //     0x8004 => self.storeValueOfSumBetweenRegistersOnFirstPassedRegister(cpu),
-            //     0x8005 => self.storeValueOfSubtractionBetweenRegistersOnFirstPassedRegister(cpu),
-            //     0x8006 => self.storeValueOfBitwiseShiftRightBetweenRegistersOnFirstPassedRegister(cpu),
-            //     0x8007 => self.storeValueOfInverseSubtractionBetweenRegistersOnFirstPassedRegister(cpu),
-            //     0x800E => self.storeValueOfBitwiseShiftLeftBetweenRegistersOnFirstPassedRegister(cpu),
+                0x8004 => self.put_value_of_sum_operation_between_v_registers_on_first_passed_register(cpu),
+                0x8005 => self.put_value_of_subtraction_operation_between_v_registers_on_first_passed_register(cpu),
+                0x8006 => self.put_value_of_bitwise_shift_right_operation_between_v_registers_on_first_passed_register(cpu),
+                0x8007 => self.put_value_of_inverted_subtraction_operation_between_v_registers_on_first_passed_register(cpu),
+                0x800E => self.put_value_of_bitwise_shift_left_operation_between_v_registers_on_first_passed_register(cpu),
                 _ => (),
             },
             // 0x9000 => self.skipNextIfFirstRegisterValueDiffSecondRegisterValue(cpu),
@@ -196,6 +196,77 @@ impl Instruction {
             first_register_number, 
             first_register_value ^ second_register_value
         );
+    }
+
+    fn put_value_of_sum_operation_between_v_registers_on_first_passed_register(&self, cpu: &mut Cpu) {
+        println!("put_value_of_sum_operation_between_v_registers_on_first_passed_register");
+
+        let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
+        let second_register_number: usize = (self.opcode as usize) >> 4 & 0x000F;
+
+        let first_register_value: u8 = cpu.get_v_register(first_register_number);
+        let second_register_value: u8 = cpu.get_v_register(second_register_number);
+
+        let (value, flag): (u8, bool) = first_register_value.overflowing_add(second_register_value);
+
+        cpu.set_v_register(0xF, flag as u8);
+        cpu.set_v_register(first_register_number, value);
+    }
+
+    fn put_value_of_subtraction_operation_between_v_registers_on_first_passed_register(&self, cpu: &mut Cpu) {
+        println!("put_value_of_subtraction_operation_between_v_registers_on_first_passed_register");
+
+        let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
+        let second_register_number: usize = (self.opcode as usize) >> 4 & 0x000F;
+
+        let first_register_value: u8 = cpu.get_v_register(first_register_number);
+        let second_register_value: u8 = cpu.get_v_register(second_register_number);
+
+        let (value, flag): (u8, bool) = first_register_value.overflowing_sub(second_register_value);
+
+        cpu.set_v_register(0xF, !flag as u8);
+        cpu.set_v_register(first_register_number, value);
+    }
+
+    fn put_value_of_bitwise_shift_right_operation_between_v_registers_on_first_passed_register(&self, cpu: &mut Cpu) {
+        println!("put_value_of_bitwise_shift_right_operation_between_v_registers_on_first_passed_register");
+
+        let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
+
+        let first_register_value: u8 = cpu.get_v_register(first_register_number);
+
+        let value: u8 = first_register_value >> 1;
+
+        cpu.set_v_register(0xF, value & 0x1);
+        cpu.set_v_register(first_register_number, value);
+    }
+
+    fn put_value_of_inverted_subtraction_operation_between_v_registers_on_first_passed_register(&self, cpu: &mut Cpu) {
+        println!("put_value_of_inverted_subtraction_operation_between_v_registers_on_first_passed_register");
+
+        let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
+        let second_register_number: usize = (self.opcode as usize) >> 4 & 0x000F;
+
+        let first_register_value: u8 = cpu.get_v_register(first_register_number);
+        let second_register_value: u8 = cpu.get_v_register(second_register_number);
+
+        let (value, flag): (u8, bool) = second_register_value.overflowing_sub(first_register_value);
+
+        cpu.set_v_register(0xF, !flag as u8);
+        cpu.set_v_register(first_register_number, value);
+    }
+
+    fn put_value_of_bitwise_shift_left_operation_between_v_registers_on_first_passed_register(&self, cpu: &mut Cpu) {
+        println!("put_value_of_bitwise_shift_left_operation_between_v_registers_on_first_passed_register");
+
+        let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
+
+        let first_register_value: u8 = cpu.get_v_register(first_register_number);
+
+        let value: u8 = first_register_value << 1;
+
+        cpu.set_v_register(0xF, (value >> 7) & 0x1);
+        cpu.set_v_register(first_register_number, value);
     }
 }
 
@@ -383,5 +454,101 @@ mod tests {
         instruction.interpret(&mut cpu);
 
         assert_eq!(0b01011010, cpu.get_v_register(0xA));
+    }
+
+    #[test_case(0x03, 0x07, 0xA, 0x0 ; "without overflow")]
+    #[test_case(0xFF, 0x01, 0x00, 0x1 ; "with overflow")]
+    fn it_should_put_value_of_sum_operation_between_v_registers_on_first_passed_register(
+        first_value: u8, 
+        second_value: u8, 
+        result: u8,
+        flag: u8,
+    ) {
+        let mut instruction: Instruction = Instruction::initialize(0x8A, 0xC4);
+        let mut cpu: Cpu = Cpu::initialize();
+
+        cpu.set_v_register(0xA, first_value);
+        cpu.set_v_register(0xC, second_value);
+
+        instruction.interpret(&mut cpu);
+
+        assert_eq!(result, cpu.get_v_register(0xA));
+        assert_eq!(flag, cpu.get_v_register(0xF));
+    }
+
+    #[test_case(0x07, 0x03, 0x4, 0x1 ; "without underflow")]
+    #[test_case(0x00, 0x01, 0xFF, 0x0 ; "with underflow")]
+    fn it_should_put_value_of_subtraction_operation_between_v_registers_on_first_passed_register(
+        first_value: u8, 
+        second_value: u8, 
+        result: u8,
+        flag: u8,
+    ) {
+        let mut instruction: Instruction = Instruction::initialize(0x8A, 0xC5);
+        let mut cpu: Cpu = Cpu::initialize();
+
+        cpu.set_v_register(0xA, first_value);
+        cpu.set_v_register(0xC, second_value);
+
+        instruction.interpret(&mut cpu);
+
+        assert_eq!(result, cpu.get_v_register(0xA));
+        assert_eq!(flag, cpu.get_v_register(0xF));
+    }
+
+    #[test_case(0b01010101, 0b00101010, 0x0 ; "with 0 on least significant bit")]
+    #[test_case(0b10101010, 0b01010101, 0x1 ; "with 1 on least significant bit")]
+    fn it_should_put_value_of_bitwise_shift_right_operation_between_v_registers_on_first_passed_register(
+        register_value: u8, 
+        result: u8,
+        flag: u8,
+    ) {
+        let mut instruction: Instruction = Instruction::initialize(0x8A, 0xC6);
+        let mut cpu: Cpu = Cpu::initialize();
+
+        cpu.set_v_register(0xA, register_value);
+
+        instruction.interpret(&mut cpu);
+
+        assert_eq!(result, cpu.get_v_register(0xA));
+        assert_eq!(flag, cpu.get_v_register(0xF));
+    }
+
+    #[test_case(0x03, 0x07, 0x4, 0x1 ; "without underflow")]
+    #[test_case(0x01, 0x00, 0xFF, 0x0 ; "with underflow")]
+    fn it_should_put_value_of_inverted_subtraction_operation_between_v_registers_on_first_passed_register(
+        first_value: u8, 
+        second_value: u8, 
+        result: u8,
+        flag: u8,
+    ) {
+        let mut instruction: Instruction = Instruction::initialize(0x8A, 0xC7);
+        let mut cpu: Cpu = Cpu::initialize();
+
+        cpu.set_v_register(0xA, first_value);
+        cpu.set_v_register(0xC, second_value);
+
+        instruction.interpret(&mut cpu);
+
+        assert_eq!(result, cpu.get_v_register(0xA));
+        assert_eq!(flag, cpu.get_v_register(0xF));
+    }
+
+    #[test_case(0b10101010, 0b01010100, 0x0 ; "with 0 on most significant bit")]
+    #[test_case(0b01010101, 0b10101010, 0x1 ; "with 1 on most significant bit")]
+    fn it_should_put_value_of_bitwise_shift_left_operation_between_v_registers_on_first_passed_register(
+        register_value: u8, 
+        result: u8,
+        flag: u8,
+    ) {
+        let mut instruction: Instruction = Instruction::initialize(0x8A, 0xCE);
+        let mut cpu: Cpu = Cpu::initialize();
+
+        cpu.set_v_register(0xA, register_value);
+
+        instruction.interpret(&mut cpu);
+
+        assert_eq!(result, cpu.get_v_register(0xA));
+        assert_eq!(flag, cpu.get_v_register(0xF));
     }
 }
