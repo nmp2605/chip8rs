@@ -19,7 +19,7 @@ impl Motherboard {
 
         loop {
             self.cpu.fetch_and_decode(
-                &self.memory,
+                &mut self.memory,
             );
         }
     }

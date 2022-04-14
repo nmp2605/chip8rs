@@ -26,7 +26,7 @@ impl Cpu {
         }
     }
 
-    pub fn fetch_and_decode(&mut self, memory: &Memory) {
+    pub fn fetch_and_decode(&mut self, memory: &mut Memory) {
         let first_byte: u8 = memory.get(self.program_counter);
 
         self.increase_program_counter(0x2);
@@ -36,7 +36,7 @@ impl Cpu {
         self.increase_program_counter(0x2);
 
         Instruction::initialize(first_byte, second_byte)
-            .interpret(self);
+            .interpret(self, memory);
     }
 
     pub fn increase_program_counter(&mut self, amount: usize) {
