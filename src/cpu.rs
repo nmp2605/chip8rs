@@ -1,5 +1,9 @@
 use crate::instruction::Instruction;
 use crate::memory::Memory;
+use mockall_double::double;
+
+#[double]
+use crate::interface::Interface;
 
 pub struct Cpu {
     v_registers: [u8; 16],
@@ -13,7 +17,7 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    pub fn initialize() -> Cpu {
+    pub fn initialize() -> Self {
         Cpu {
             v_registers: [0x0; 16],
             i_register: 0x0,
@@ -26,7 +30,7 @@ impl Cpu {
         }
     }
 
-    pub fn fetch_and_decode(&mut self, memory: &mut Memory) {
+    pub fn fetch_and_decode(&mut self, memory: &mut Memory, interface: &mut Interface) {
         let first_byte: u8 = memory.get(self.program_counter);
 
         self.increase_program_counter(0x2);
@@ -36,7 +40,7 @@ impl Cpu {
         self.increase_program_counter(0x2);
 
         Instruction::initialize(first_byte, second_byte)
-            .interpret(self, memory);
+            .interpret(self, memory, interface);
     }
 
     pub fn increase_program_counter(&mut self, amount: usize) {

@@ -2,23 +2,27 @@ use std::ops::{Div, Sub};
 
 use crate::cpu::Cpu;
 use crate::memory::Memory;
+use mockall_double::double;
 use rand::Rng;
+
+#[double]
+use crate::interface::Interface;
 
 pub struct Instruction {
     opcode: u16,
 }
 
 impl Instruction {
-    pub fn initialize(first_byte: u8, second_byte: u8) -> Instruction {
+    pub fn initialize(first_byte: u8, second_byte: u8) -> Self {
         Instruction {
             opcode: u16::from(first_byte) << 8 | u16::from(second_byte),
         }
     }
 
-    pub fn interpret(&mut self, cpu: &mut Cpu, memory: &mut Memory) {
+    pub fn interpret(&mut self, cpu: &mut Cpu, memory: &mut Memory, interface: &mut Interface) {
         match self.opcode & 0xF000 {
             0x0000 => match self.opcode {
-                0x00E0 => self.clear_display(),
+                0x00E0 => self.clear_display(interface),
                 0x00EE => self.return_from_subroutine(cpu),
                 _ => (),
             },
@@ -67,8 +71,12 @@ impl Instruction {
         }
     }
 
-    fn clear_display(&self) {
+    fn clear_display(&self, interface: &mut Interface) {
         println!("clear_display");
+
+        interface.set_buffer(
+            vec!(Interface::BLACK; Interface::WIDTH * Interface::HEIGHT)
+        );
     }
 
     fn return_from_subroutine(&self, cpu: &mut Cpu) {
@@ -476,6 +484,7 @@ impl Instruction {
 
 #[cfg(test)]
 mod tests {
+    use mockall::predicate::eq;
     use test_case::test_case;
     use super::*;
 
@@ -488,7 +497,18 @@ mod tests {
 
     #[test]
     fn it_should_clear_the_display() {
-        let instruction: Instruction = Instruction::initialize(0x00, 0xE0);
+        let mut instruction: Instruction = Instruction::initialize(0x00, 0xE0);
+        let mut cpu: Cpu = Cpu::initialize();
+        let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
+
+        interface.expect_set_buffer()
+            .with(
+                eq(vec!(Interface::BLACK; Interface::WIDTH * Interface::HEIGHT))
+            )
+            .returning(|_| ());
+
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
     }
 
     #[test]
@@ -496,12 +516,13 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x00, 0xEE);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.stack_push(0xCAF);
 
         assert_eq!(0x200, cpu.get_program_counter());
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0xCAF, cpu.get_program_counter());
     }
@@ -511,8 +532,9 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x1C, 0xAF);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0xCAF, cpu.get_program_counter());
     }
@@ -522,8 +544,9 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x2C, 0xAF);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0xCAF, cpu.get_program_counter());
         assert_eq!(0x200, cpu.stack_pop());
@@ -539,10 +562,11 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x3A, instruction_value);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0xA, register_value);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(program_counter, cpu.get_program_counter());
     }
@@ -557,10 +581,11 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x4A, instruction_value);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0xA, register_value);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(program_counter, cpu.get_program_counter());
     }
@@ -575,11 +600,12 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x5A, 0xB0);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0xA, first_register_value);
         cpu.set_v_register(0xB, second_register_value);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(program_counter, cpu.get_program_counter());
     }
@@ -589,10 +615,11 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x6A, 0xCA);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         assert_eq!(0x00, cpu.get_v_register(0xA));
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0xCA, cpu.get_v_register(0xA));
     }
@@ -607,10 +634,11 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x7A, argument_value);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0xA, register_value);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(result, cpu.get_v_register(0xA));
     }
@@ -620,12 +648,13 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x8A, 0xC0);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0xC, 0xFE);
 
         assert_eq!(0x00, cpu.get_v_register(0xA));
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0xFE, cpu.get_v_register(0xA));
     }
@@ -635,11 +664,12 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x8A, 0xC1);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0xA, 0b10101010);
         cpu.set_v_register(0xC, 0b11110000);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0b11111010, cpu.get_v_register(0xA));
     }
@@ -649,11 +679,12 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x8A, 0xC2);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0xA, 0b10101010);
         cpu.set_v_register(0xC, 0b11110000);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0b10100000, cpu.get_v_register(0xA));
     }
@@ -663,11 +694,12 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x8A, 0xC3);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0xA, 0b10101010);
         cpu.set_v_register(0xC, 0b11110000);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0b01011010, cpu.get_v_register(0xA));
     }
@@ -683,11 +715,12 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x8A, 0xC4);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0xA, first_value);
         cpu.set_v_register(0xC, second_value);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(result, cpu.get_v_register(0xA));
         assert_eq!(flag, cpu.get_v_register(0xF));
@@ -704,11 +737,12 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x8A, 0xC5);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0xA, first_value);
         cpu.set_v_register(0xC, second_value);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(result, cpu.get_v_register(0xA));
         assert_eq!(flag, cpu.get_v_register(0xF));
@@ -724,10 +758,11 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x8A, 0xC6);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0xA, register_value);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(result, cpu.get_v_register(0xA));
         assert_eq!(flag, cpu.get_v_register(0xF));
@@ -744,11 +779,12 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x8A, 0xC7);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0xA, first_value);
         cpu.set_v_register(0xC, second_value);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(result, cpu.get_v_register(0xA));
         assert_eq!(flag, cpu.get_v_register(0xF));
@@ -764,10 +800,11 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x8A, 0xCE);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0xA, register_value);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(result, cpu.get_v_register(0xA));
         assert_eq!(flag, cpu.get_v_register(0xF));
@@ -783,11 +820,12 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0x9A, 0xB0);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0xA, first_register_value);
         cpu.set_v_register(0xB, second_register_value);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(program_counter, cpu.get_program_counter());
     }
@@ -797,8 +835,9 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0xAC, 0xAF);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0x0CAF, cpu.get_i_register());
     }
@@ -808,10 +847,11 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0xB0, 0x03);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0x0, 0x4);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0x7, cpu.get_program_counter());
     }
@@ -821,10 +861,11 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0xCA, 0xFF);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         assert_eq!(0x0, cpu.get_v_register(0xA));
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0xFF, cpu.get_v_register(0xA));
     }
@@ -849,12 +890,13 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0xFC, 0x07);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_delay_timer(0xCA);
 
         assert_eq!(0x0, cpu.get_v_register(0xC));
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0xCA, cpu.get_v_register(0xC));
     }
@@ -869,12 +911,13 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0xFC, 0x15);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0xC, 0xFE);
 
         assert_eq!(0x0, cpu.get_delay_timer());
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0xFE, cpu.get_delay_timer());
     }
@@ -884,12 +927,13 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0xFC, 0x18);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0xC, 0xFE);
 
         assert_eq!(0x0, cpu.get_sound_timer());
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0xFE, cpu.get_sound_timer());
     }
@@ -904,11 +948,12 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0xFC, 0x1E);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_i_register(i_register_value);
         cpu.set_v_register(0xC, v_register_value);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(result, cpu.get_i_register());
     }
@@ -923,11 +968,12 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0xFC, 0x33);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_i_register(0x200);
         cpu.set_v_register(0xC, 198);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(1, memory.get(0x200));
         assert_eq!(9, memory.get(0x201));
@@ -939,6 +985,7 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0xFF, 0x55);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         cpu.set_v_register(0x0, 0x10);
         cpu.set_v_register(0x1, 0x11);
@@ -959,7 +1006,7 @@ mod tests {
 
         cpu.set_i_register(0x200);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0x10, memory.get(0x200));
         assert_eq!(0x11, memory.get(0x201));
@@ -984,6 +1031,7 @@ mod tests {
         let mut instruction: Instruction = Instruction::initialize(0xFF, 0x65);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
 
         memory.set(0x200, 0x10);
         memory.set(0x201, 0x11);
@@ -1004,7 +1052,7 @@ mod tests {
 
         cpu.set_i_register(0x200);
 
-        instruction.interpret(&mut cpu, &mut memory);
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0x10, cpu.get_v_register(0x0));
         assert_eq!(0x11, cpu.get_v_register(0x1));
