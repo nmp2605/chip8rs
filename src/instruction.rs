@@ -49,7 +49,7 @@ impl Instruction {
             0xA000 => self.put_argument_value_on_i_register(cpu),
             0xB000 => self.jump_to_argument_value_plus_v0(cpu),
             0xC000 => self.put_value_of_bitwise_or_operation_between_argument_and_random_byte_on_passed_v_register(cpu),
-            0xD000 => self.draw_byte_sprite_starting_at_location_i_on_register_stored_location(cpu),
+            0xD000 => self.draw_byte_sprite_starting_at_location_i_on_register_stored_location(cpu, memory, interface),
             0xE000 => match self.opcode & 0xF0FF {
                 0xE09E => self.skip_next_instruction_if_key_with_v_register_value_is_pressed(cpu),
                 0xE0A1 => self.skip_next_instruction_if_key_with_v_register_value_is_not_pressed(cpu),
@@ -74,9 +74,7 @@ impl Instruction {
     fn clear_display(&self, interface: &mut Interface) {
         println!("clear_display");
 
-        interface.set_buffer(
-            vec!(Interface::BLACK; Interface::WIDTH * Interface::HEIGHT)
-        );
+        interface.clear();
     }
 
     fn return_from_subroutine(&self, cpu: &mut Cpu) {
@@ -116,7 +114,7 @@ impl Instruction {
         let register_value: u8 = cpu.get_v_register(register_number);
 
         if argument_value == register_value {
-            cpu.increase_program_counter(2);
+            cpu.increase_program_counter(0x2);
         }
     }
 
@@ -129,7 +127,7 @@ impl Instruction {
         let register_value: u8 = cpu.get_v_register(register_number);
 
         if argument_value != register_value {
-            cpu.increase_program_counter(2);
+            cpu.increase_program_counter(0x2);
         }
     }
 
@@ -143,7 +141,7 @@ impl Instruction {
         let second_register_value: u8 = cpu.get_v_register(second_register_number);
 
         if first_register_value == second_register_value {
-            cpu.increase_program_counter(2);
+            cpu.increase_program_counter(0x2);
         }
     }
 
@@ -320,7 +318,7 @@ impl Instruction {
     }
 
     fn jump_to_argument_value_plus_v0(&self, cpu: &mut Cpu) {
-        println!("put_argument_value_on_i_register");
+        println!("jump_to_argument_value_plus_v0");
 
         let argument: u16 = self.opcode & 0xFFF;
         let address: usize = (argument as usize) + (cpu.get_v_register(0x0) as usize);
@@ -341,8 +339,55 @@ impl Instruction {
         );
     }
 
-    fn draw_byte_sprite_starting_at_location_i_on_register_stored_location(&self, cpu: &mut Cpu) {
+    fn draw_byte_sprite_starting_at_location_i_on_register_stored_location(
+        &self, 
+        cpu: &mut Cpu,
+        memory: &mut Memory,
+        interface: &mut Interface,
+    ) {
         println!("draw_byte_sprite_starting_at_location_i_on_register_stored_location");
+
+        cpu.set_v_register(0xF, 0x0);
+
+        let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
+        let second_register_number: usize = (self.opcode as usize) >> 4 & 0x000F;
+        let number_of_sprite_bytes: u8 = (self.opcode as u8) & 0x000F;
+
+        let mut memory_position: usize = cpu.get_i_register() as usize;
+
+        let initial_width_position: usize = (cpu.get_v_register(first_register_number) as usize) % Interface::WIDTH;
+        let initial_height_position: usize = (cpu.get_v_register(second_register_number) as usize) % Interface::HEIGHT;
+        
+        let mut current_width_position: usize = initial_width_position;
+        let mut current_height_position: usize = initial_height_position;
+
+        for _ in 0..=number_of_sprite_bytes {
+            let byte: u8 = memory.get(memory_position);
+
+            println!("{:b} w: {:?} h: {:?}", byte, current_width_position, current_height_position);
+
+            for shift_size in (0..8).rev() {
+                if current_width_position >= Interface::WIDTH || current_height_position >= Interface::HEIGHT {
+                    continue;
+                }
+
+                let has_flag = interface.draw_pixel(
+                    (byte >> shift_size & 0b1) == 0b1, 
+                    current_width_position, 
+                    current_height_position
+                );
+
+                current_width_position += 1;
+
+                if has_flag {
+                    cpu.set_v_register(0xF, 0x1);
+                }
+            }
+
+            memory_position += 1;
+            current_height_position += 1;
+            current_width_position = initial_width_position;
+        }
     }
 
     fn skip_next_instruction_if_key_with_v_register_value_is_pressed(&self, cpu: &mut Cpu) {
@@ -502,11 +547,8 @@ mod tests {
         let mut memory: Memory = Memory::initialize();
         let mut interface= Interface::default();
 
-        interface.expect_set_buffer()
-            .with(
-                eq(vec!(Interface::BLACK; Interface::WIDTH * Interface::HEIGHT))
-            )
-            .returning(|_| ());
+        interface.expect_clear()
+            .returning(|| ());
 
         instruction.interpret(&mut cpu, &mut memory, &mut interface);
     }
@@ -871,8 +913,144 @@ mod tests {
     }
 
     #[test]
-    fn it_should_draw_byte_sprite_starting_at_location_i_on_register_stored_location() {
-        let instruction: Instruction = Instruction::initialize(0xDA, 0xCF);
+    fn it_should_draw_byte_sprite_starting_at_location_i_on_register_stored_location_without_collisions() {
+        let mut instruction: Instruction = Instruction::initialize(0xDA, 0xC0);
+        let mut cpu: Cpu = Cpu::initialize();
+        let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
+
+        cpu.set_i_register(0x400);
+        cpu.set_v_register(0xA, 0x3);
+        cpu.set_v_register(0xC, 0x0);
+
+        memory.set(0x400, 0b11001010);
+
+        interface.expect_draw_pixel().with(eq(true), eq(0x3), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x4), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(false), eq(0x5), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(false), eq(0x6), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x7), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(false), eq(0x8), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x9), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(false), eq(0xA), eq(0x0)).returning(|_, _, _| false);
+
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
+
+        assert_eq!(0x0, cpu.get_v_register(0xF));
+    }
+
+    #[test]
+    fn it_should_draw_byte_sprite_starting_at_location_i_on_register_stored_location_with_collisions() {
+        let mut instruction: Instruction = Instruction::initialize(0xDA, 0xC0);
+        let mut cpu: Cpu = Cpu::initialize();
+        let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
+
+        cpu.set_i_register(0x400);
+        cpu.set_v_register(0xA, 0x3);
+        cpu.set_v_register(0xC, 0x0);
+
+        memory.set(0x400, 0b11001010);
+
+        interface.expect_draw_pixel().with(eq(true), eq(0x3), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x4), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(false), eq(0x5), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(false), eq(0x6), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x7), eq(0x0)).returning(|_, _, _| true);
+        interface.expect_draw_pixel().with(eq(false), eq(0x8), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x9), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(false), eq(0xA), eq(0x0)).returning(|_, _, _| false);
+
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
+
+        assert_eq!(0x1, cpu.get_v_register(0xF));
+    }
+
+    #[test]
+    fn it_should_draw_byte_sprite_starting_at_location_i_on_register_stored_location_with_multiple_height_values() {
+        let mut instruction: Instruction = Instruction::initialize(0xDA, 0xC1);
+        let mut cpu: Cpu = Cpu::initialize();
+        let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
+
+        cpu.set_i_register(0x400);
+        cpu.set_v_register(0xA, 0x3);
+        cpu.set_v_register(0xC, 0x0);
+
+        memory.set(0x400, 0b11001010);
+        memory.set(0x401, 0b11111111);
+
+        interface.expect_draw_pixel().with(eq(true), eq(0x3), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x4), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(false), eq(0x5), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(false), eq(0x6), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x7), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(false), eq(0x8), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x9), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(false), eq(0xA), eq(0x0)).returning(|_, _, _| false);
+
+        interface.expect_draw_pixel().with(eq(true), eq(0x3), eq(0x1)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x4), eq(0x1)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x5), eq(0x1)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x6), eq(0x1)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x7), eq(0x1)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x8), eq(0x1)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x9), eq(0x1)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0xA), eq(0x1)).returning(|_, _, _| false);
+
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
+
+        assert_eq!(0x0, cpu.get_v_register(0xF));
+    }
+
+    #[test]
+    fn it_should_draw_byte_sprite_starting_at_location_i_on_register_stored_location_wrapping_the_width() {
+        let mut instruction: Instruction = Instruction::initialize(0xDA, 0xC0);
+        let mut cpu: Cpu = Cpu::initialize();
+        let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
+
+        cpu.set_i_register(0x400);
+        cpu.set_v_register(0xA, 67);
+        cpu.set_v_register(0xC, 0x0);
+
+        memory.set(0x400, 0b11001010);
+
+        interface.expect_draw_pixel().with(eq(true), eq(0x3), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x4), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(false), eq(0x5), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(false), eq(0x6), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x7), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(false), eq(0x8), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(0x9), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(false), eq(0xA), eq(0x0)).returning(|_, _, _| false);
+
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
+
+        assert_eq!(0x0, cpu.get_v_register(0xF));
+    }
+
+    #[test]
+    fn it_should_draw_byte_sprite_starting_at_location_i_on_register_stored_location_cutting_extra_bits() {
+        let mut instruction: Instruction = Instruction::initialize(0xDA, 0xC0);
+        let mut cpu: Cpu = Cpu::initialize();
+        let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
+
+        cpu.set_i_register(0x400);
+        cpu.set_v_register(0xA, 60);
+        cpu.set_v_register(0xC, 0x0);
+
+        memory.set(0x400, 0b11111111);
+
+        interface.expect_draw_pixel().with(eq(true), eq(60), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(61), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(62), eq(0x0)).returning(|_, _, _| false);
+        interface.expect_draw_pixel().with(eq(true), eq(63), eq(0x0)).returning(|_, _, _| false);
+
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
+
+        assert_eq!(0x0, cpu.get_v_register(0xF));
     }
 
     #[test]

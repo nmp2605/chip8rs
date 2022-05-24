@@ -23,13 +23,18 @@ impl Motherboard {
 
     pub fn emulate(&mut self, program: Vec<u8>) {
         self.memory.store_program(program);
+        self.memory.set_font();
+
+        self.interface.clear();
+        self.interface.refresh();
 
         while self.interface.window_is_open() {
             self.cpu.fetch_and_decode(
-                &mut self.memory, &mut self.interface
+                &mut self.memory, 
+                &mut self.interface
             );
 
-            thread::sleep(time::Duration::from_millis(1500));
+            self.interface.refresh();
         }
     }
 }

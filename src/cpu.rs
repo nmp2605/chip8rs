@@ -5,6 +5,7 @@ use mockall_double::double;
 #[double]
 use crate::interface::Interface;
 
+#[derive(Debug)]
 pub struct Cpu {
     v_registers: [u8; 16],
     i_register: u16,
@@ -33,11 +34,13 @@ impl Cpu {
     pub fn fetch_and_decode(&mut self, memory: &mut Memory, interface: &mut Interface) {
         let first_byte: u8 = memory.get(self.program_counter);
 
-        self.increase_program_counter(0x2);
+        self.increase_program_counter(0x1);
 
         let second_byte: u8 = memory.get(self.program_counter);
 
-        self.increase_program_counter(0x2);
+        self.increase_program_counter(0x1);
+
+        println!("{:?}: {:x}{:x}", self.program_counter, first_byte, second_byte);
 
         Instruction::initialize(first_byte, second_byte)
             .interpret(self, memory, interface);
