@@ -48,15 +48,15 @@ impl Interface {
     pub fn draw_pixel(&mut self, state: bool, x: usize, y: usize) -> bool {
         let index: usize = x + (y * Interface::WIDTH);
 
-        let color: u32 = match state {
+        let old_state: bool = self.buffer[index] == Interface::WHITE;
+
+        let color: u32 = match old_state != state {
             true => Interface::WHITE,
             false => Interface::BLACK,
         };
 
-        let flag: bool = self.buffer[index] == Interface::WHITE;
+        self.buffer[index] = color;
 
-        self.buffer[index] = Interface::WHITE;
-
-        flag
+        old_state == state
     }
 }

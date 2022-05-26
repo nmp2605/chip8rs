@@ -361,7 +361,7 @@ impl Instruction {
         let mut current_width_position: usize = initial_width_position;
         let mut current_height_position: usize = initial_height_position;
 
-        for _ in 0..=number_of_sprite_bytes {
+        for _ in 0..number_of_sprite_bytes {
             let byte: u8 = memory.get(memory_position);
 
             println!("{:b} w: {:?} h: {:?}", byte, current_width_position, current_height_position);
@@ -914,7 +914,7 @@ mod tests {
 
     #[test]
     fn it_should_draw_byte_sprite_starting_at_location_i_on_register_stored_location_without_collisions() {
-        let mut instruction: Instruction = Instruction::initialize(0xDA, 0xC0);
+        let mut instruction: Instruction = Instruction::initialize(0xDA, 0xC1);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
         let mut interface= Interface::default();
@@ -941,7 +941,7 @@ mod tests {
 
     #[test]
     fn it_should_draw_byte_sprite_starting_at_location_i_on_register_stored_location_with_collisions() {
-        let mut instruction: Instruction = Instruction::initialize(0xDA, 0xC0);
+        let mut instruction: Instruction = Instruction::initialize(0xDA, 0xC1);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
         let mut interface= Interface::default();
@@ -968,7 +968,7 @@ mod tests {
 
     #[test]
     fn it_should_draw_byte_sprite_starting_at_location_i_on_register_stored_location_with_multiple_height_values() {
-        let mut instruction: Instruction = Instruction::initialize(0xDA, 0xC1);
+        let mut instruction: Instruction = Instruction::initialize(0xDA, 0xC2);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
         let mut interface= Interface::default();
@@ -1005,7 +1005,7 @@ mod tests {
 
     #[test]
     fn it_should_draw_byte_sprite_starting_at_location_i_on_register_stored_location_wrapping_the_width() {
-        let mut instruction: Instruction = Instruction::initialize(0xDA, 0xC0);
+        let mut instruction: Instruction = Instruction::initialize(0xDA, 0xC1);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
         let mut interface= Interface::default();
@@ -1032,7 +1032,7 @@ mod tests {
 
     #[test]
     fn it_should_draw_byte_sprite_starting_at_location_i_on_register_stored_location_cutting_extra_bits() {
-        let mut instruction: Instruction = Instruction::initialize(0xDA, 0xC0);
+        let mut instruction: Instruction = Instruction::initialize(0xDA, 0xC1);
         let mut cpu: Cpu = Cpu::initialize();
         let mut memory: Memory = Memory::initialize();
         let mut interface= Interface::default();
