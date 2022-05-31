@@ -1,6 +1,7 @@
 mod cpu;
 mod interface;
 mod instruction;
+mod keyboard;
 mod memory;
 mod motherboard;
 

@@ -1,5 +1,6 @@
 
-use minifb::{Window, WindowOptions};
+use crate::keyboard::Keyboard;
+use minifb::{Window, WindowOptions, KeyRepeat};
 
 #[cfg(test)]
 use mockall::automock;
@@ -7,6 +8,7 @@ use mockall::automock;
 pub struct Interface {
     window: Window,
     buffer: Vec<u32>,
+    keyboard: Keyboard,
 }
 
 #[cfg_attr(test, automock)]
@@ -28,7 +30,8 @@ impl Interface {
 
         Interface {
             window: window,
-            buffer: vec![0; Interface::WIDTH * Interface::HEIGHT]
+            buffer: vec![0; Interface::WIDTH * Interface::HEIGHT],
+            keyboard: Keyboard::initialize(),
         }
     }
 
@@ -58,5 +61,16 @@ impl Interface {
         self.buffer[index] = color;
 
         old_state == state
+    }
+
+    pub fn is_pressed(&mut self, key_code: u8) -> bool {
+        self.window.is_key_pressed(
+            self.keyboard.get_key(key_code as usize), 
+            KeyRepeat::No,
+        )
+    }
+
+    pub fn is_not_pressed(&mut self, key_code: u8) -> bool {
+        self.is_pressed(key_code) == false
     }
 }
