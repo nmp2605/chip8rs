@@ -7,7 +7,7 @@ What's Still Missing
 
 The interpreter is a work in progress. It is still missing key parts, such as:
 
-- [] Input Handling
+- Input Handling
 
 Requirements
 ------------
