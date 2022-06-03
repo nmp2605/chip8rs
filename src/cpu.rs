@@ -50,6 +50,10 @@ impl Cpu {
         self.program_counter += amount;
     }
 
+    pub fn decrease_program_counter(&mut self, amount: usize) {
+        self.program_counter -= amount;
+    }
+
     pub fn set_program_counter(&mut self, value: usize) {
         self.program_counter = value;
     }
@@ -147,6 +151,17 @@ mod tests {
         cpu.increase_program_counter(0x4);
 
         assert_eq!(0x204, cpu.program_counter);
+    }
+
+    #[test]
+    fn it_should_decrease_the_program_counter() {
+        let mut cpu: Cpu = Cpu::initialize();
+
+        cpu.program_counter = 0x204;
+
+        cpu.decrease_program_counter(0x4);
+
+        assert_eq!(0x200, cpu.program_counter);
     }
 
     #[test]

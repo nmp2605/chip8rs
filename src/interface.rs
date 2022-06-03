@@ -1,6 +1,8 @@
 
+use std::collections::HashSet;
+
 use crate::keyboard::Keyboard;
-use minifb::{Window, WindowOptions, KeyRepeat};
+use minifb::{Window, WindowOptions, KeyRepeat, Key};
 
 #[cfg(test)]
 use mockall::automock;
@@ -63,14 +65,23 @@ impl Interface {
         old_state == state
     }
 
-    pub fn is_pressed(&mut self, key_code: u8) -> bool {
-        self.window.is_key_pressed(
-            self.keyboard.get_key(key_code as usize), 
-            KeyRepeat::No,
+    pub fn is_pressed(&self, key_code: usize) -> bool {
+        self.window.is_key_down(
+            self.keyboard.get_key(key_code)
         )
     }
 
-    pub fn is_not_pressed(&mut self, key_code: u8) -> bool {
+    pub fn is_not_pressed(&self, key_code: usize) -> bool {
         self.is_pressed(key_code) == false
+    }
+
+    pub fn get_pressed_key(&self) -> Option<usize> {
+        for (index, _key) in self.keyboard.get_keys().iter().enumerate() {
+            if self.is_pressed(index) {
+                return Some(index);
+            }
+        }
+
+        return None;
     }
 }

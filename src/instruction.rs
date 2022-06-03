@@ -51,13 +51,13 @@ impl Instruction {
             0xC000 => self.put_value_of_bitwise_or_operation_between_argument_and_random_byte_on_passed_v_register(cpu),
             0xD000 => self.draw_byte_sprite_starting_at_location_i_on_register_stored_location(cpu, memory, interface),
             0xE000 => match self.opcode & 0xF0FF {
-                0xE09E => self.skip_next_instruction_if_key_with_v_register_value_is_pressed(cpu),
-                0xE0A1 => self.skip_next_instruction_if_key_with_v_register_value_is_not_pressed(cpu),
+                0xE09E => self.skip_next_instruction_if_key_with_v_register_value_is_pressed(interface, cpu),
+                0xE0A1 => self.skip_next_instruction_if_key_with_v_register_value_is_not_pressed(interface, cpu),
                 _ => (),
             }
             0xF000 => match self.opcode & 0xF0FF {
                 0xF007 => self.put_delay_timer_value_on_v_register(cpu),
-                0xF00A => self.wait_for_key_press_and_store_value_on_v_register(cpu),
+                0xF00A => self.wait_for_key_press_and_store_value_on_v_register(cpu, interface),
                 0xF015 => self.put_v_register_value_on_delay_timer(cpu),
                 0xF018 => self.put_v_register_value_on_sound_timer(cpu),
                 0xF01E => self.add_v_register_value_to_i_register_value(cpu),
@@ -390,12 +390,24 @@ impl Instruction {
         }
     }
 
-    fn skip_next_instruction_if_key_with_v_register_value_is_pressed(&self, cpu: &mut Cpu) {
+    fn skip_next_instruction_if_key_with_v_register_value_is_pressed(&self, interface: &mut Interface, cpu: &mut Cpu) {
         println!("skip_next_instruction_if_key_with_v_register_value_is_pressed");
+
+        let key_index: usize = (self.opcode as usize) >> 8 & 0xF;
+
+        if interface.is_pressed(key_index) {
+            cpu.increase_program_counter(2);
+        }
     }
 
-    fn skip_next_instruction_if_key_with_v_register_value_is_not_pressed(&self, cpu: &mut Cpu) {
+    fn skip_next_instruction_if_key_with_v_register_value_is_not_pressed(&self, interface: &mut Interface, cpu: &mut Cpu) {
         println!("skip_next_instruction_if_key_with_v_register_value_is_not_pressed");
+
+        let key_index: usize = (self.opcode as usize) >> 8 & 0xF;
+
+        if interface.is_not_pressed(key_index) {
+            cpu.increase_program_counter(2);
+        }
     }
 
     fn put_delay_timer_value_on_v_register(&self, cpu: &mut Cpu) {
@@ -409,8 +421,15 @@ impl Instruction {
         );
     }
 
-    fn wait_for_key_press_and_store_value_on_v_register(&self, cpu: &mut Cpu) {
+    fn wait_for_key_press_and_store_value_on_v_register(&self, cpu: &mut Cpu, interface: &mut Interface) {
         println!("wait_for_key_press_and_store_value_on_v_register");
+
+        let register_number: usize = (self.opcode as usize) >> 8 & 0xF;
+
+        match interface.get_pressed_key() {
+            Some(key) => cpu.set_v_register(register_number, key as u8),
+            None => cpu.decrease_program_counter(2),
+        }
     }
 
     fn put_v_register_value_on_delay_timer(&self, cpu: &mut Cpu) {
@@ -1053,14 +1072,34 @@ mod tests {
         assert_eq!(0x0, cpu.get_v_register(0xF));
     }
 
-    #[test]
-    fn it_should_skip_next_instruction_if_key_with_v_register_value_is_pressed() {
-        let instruction: Instruction = Instruction::initialize(0xEA, 0x9E);
+    #[test_case(true, 0x202 ; "with key press")]
+    #[test_case(false, 0x200 ; "without key press")]
+    fn it_should_skip_next_instruction_if_key_with_v_register_value_is_pressed(press: bool, program_counter: usize) {
+        let mut instruction: Instruction = Instruction::initialize(0xEA, 0x9E);
+        let mut cpu: Cpu = Cpu::initialize();
+        let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
+
+        interface.expect_is_pressed().with(eq(0xA)).returning(move |_| press);
+
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
+
+        assert_eq!(program_counter, cpu.get_program_counter());
     }
 
-    #[test]
-    fn it_should_skip_next_instruction_if_key_with_v_register_value_is_not_pressed() {
-        let instruction: Instruction = Instruction::initialize(0xEA, 0x41);
+    #[test_case(false, 0x200 ; "with key press")]
+    #[test_case(true, 0x202 ; "without key press")]
+    fn it_should_skip_next_instruction_if_key_with_v_register_value_is_not_pressed(press: bool, program_counter: usize) {
+        let mut instruction: Instruction = Instruction::initialize(0xEA, 0xA1);
+        let mut cpu: Cpu = Cpu::initialize();
+        let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
+
+        interface.expect_is_not_pressed().with(eq(0xA)).returning(move |_| press);
+
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
+
+        assert_eq!(program_counter, cpu.get_program_counter());
     }
 
     #[test]
@@ -1080,8 +1119,36 @@ mod tests {
     }
 
     #[test]
-    fn it_should_wait_for_key_press_and_store_value_on_v_register() {
-        let instruction: Instruction = Instruction::initialize(0xFC, 0x0A);
+    fn it_should_wait_for_key_press_and_store_value_on_v_register_with_a_key_press() {
+        let mut instruction: Instruction = Instruction::initialize(0xFC, 0x0A);
+        let mut cpu: Cpu = Cpu::initialize();
+        let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
+
+        interface.expect_get_pressed_key()
+            .returning(|| Some(0xA));
+
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
+
+        assert_eq!(0xA, cpu.get_v_register(0xC));
+    }
+
+    #[test]
+    fn it_should_wait_for_key_press_and_store_value_on_v_register_without_a_key_press() {
+        let mut instruction: Instruction = Instruction::initialize(0xFC, 0x0A);
+        let mut cpu: Cpu = Cpu::initialize();
+        let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
+
+        interface.expect_get_pressed_key()
+            .returning(|| None);
+
+        cpu.set_program_counter(0x202);
+
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
+
+        assert_eq!(0x200, cpu.get_program_counter());
+        assert_eq!(0x0, cpu.get_v_register(0xC));
     }
 
     #[test]

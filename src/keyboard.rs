@@ -28,6 +28,10 @@ impl Keyboard {
         }
     }
 
+    pub fn get_keys(&self) -> [Key; 16] {
+        self.keys
+    }
+
     pub fn get_key(&self, index: usize) -> Key {
         self.keys[index]
     }
@@ -57,6 +61,30 @@ mod tests {
         assert_eq!(keyboard.keys[0xD], Key::R);
         assert_eq!(keyboard.keys[0xE], Key::F);
         assert_eq!(keyboard.keys[0xF], Key::V);
+    }
+
+    #[test]
+    fn it_should_get_the_keys() {
+        let keyboard: Keyboard = Keyboard::initialize();
+
+        assert_eq!(keyboard.get_keys(), [
+            Key::X,
+            Key::Key1,
+            Key::Key2,
+            Key::Key3,
+            Key::Q,
+            Key::W,
+            Key::E,
+            Key::A,
+            Key::S,
+            Key::D,
+            Key::Z,
+            Key::C,
+            Key::Key4,
+            Key::R,
+            Key::F,
+            Key::V,
+        ]);
     }
 
     #[test]
