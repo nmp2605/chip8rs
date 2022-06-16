@@ -5,9 +5,9 @@ This project's main purpose is to write a readable, understandable interpreter f
 What's Still Missing
 --------------------
 
-The interpreter is a work in progress. It is still missing key parts, such as:
+The interpreter is a work in progress. It are still some key parts missing, such as:
 
-- Input Handling
+- Precise Timers
 
 Requirements
 ------------
@@ -35,6 +35,7 @@ To make it feel "realistic," I've tried to separate everything as if it was a re
 - Memory: stores and reads data from the ROM.
 - Instruction: this was separated from the CPU because of the amount of data, and it localizes and executes the instructions on Chip-8.
 - Interface: loads the screen where the emulator runs, controlling the display and input using [minifb](https://docs.rs/minifb/latest/minifb/).
+- Keyboard: contains information about which keys will be used in the interpreter.
 
 Finding ROMs
 ------------

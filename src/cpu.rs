@@ -40,10 +40,20 @@ impl Cpu {
 
         self.increase_program_counter(0x1);
 
-        println!("{:?}: {:x}{:x}", self.program_counter, first_byte, second_byte);
-
         Instruction::initialize(first_byte, second_byte)
             .interpret(self, memory, interface);
+    }
+
+    pub fn decrease_timers_on_tick(&mut self) {
+        if self.delay_timer > 0 {
+            self.delay_timer -= 1;
+        }
+
+        if self.sound_timer > 0 {
+            self.sound_timer -= 1;
+        } else {
+            // deal with sounds
+        }
     }
 
     pub fn increase_program_counter(&mut self, amount: usize) {
@@ -142,6 +152,19 @@ mod tests {
         assert_eq!(0x200, cpu.program_counter);
         assert_eq!(0x0, cpu.stack_pointer);
         assert_eq!([0x0; 0xF], cpu.stack);
+    }
+
+    #[test]
+    fn it_should_decrease_timers_on_tick() {
+        let mut cpu: Cpu = Cpu::initialize();
+
+        cpu.delay_timer = 5;
+        cpu.sound_timer = 4;
+
+        cpu.decrease_timers_on_tick();
+
+        assert_eq!(4, cpu.delay_timer);
+        assert_eq!(3, cpu.sound_timer);
     }
 
     #[test]

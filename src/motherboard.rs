@@ -34,6 +34,8 @@ impl Motherboard {
                 &mut self.interface
             );
 
+            self.cpu.decrease_timers_on_tick();
+
             self.interface.refresh();
         }
     }
