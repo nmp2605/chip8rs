@@ -7,7 +7,9 @@ What's Still Missing
 
 The interpreter is a work in progress. It are still some key parts missing, such as:
 
-- Precise Timers
+- Precise timers
+- Enhance performance
+- Proper implementation of inputs
 
 Requirements
 ------------

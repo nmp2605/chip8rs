@@ -72,30 +72,22 @@ impl Instruction {
     }
 
     fn clear_display(&self, interface: &mut Interface) {
-        println!("clear_display");
-
         interface.clear();
     }
 
     fn return_from_subroutine(&self, cpu: &mut Cpu) {
-        println!("return_from_subroutine");
-
         let top_value_from_stack: usize = cpu.stack_pop() as usize;
 
         cpu.set_program_counter(top_value_from_stack);
     }
 
     fn jump_to_address(&self, cpu: &mut Cpu) {
-        println!("jump_to_address");
-
         let address = usize::from(self.opcode & 0x0FFF);
 
         cpu.set_program_counter(address);
     }
 
     fn call_subroutine_at_address(&self, cpu: &mut Cpu) {
-        println!("call_subroutine_at_address");
-
         cpu.stack_push(
             cpu.get_program_counter() as u16,
         );
@@ -106,8 +98,6 @@ impl Instruction {
     }
 
     fn skip_next_instruction_if_argument_equals_v_register_value(&self, cpu: &mut Cpu) {
-        println!("skip_next_instruction_if_argument_equals_v_register_value");
-
         let argument_value: u8 = (self.opcode as u8) & 0x00FF;
         let register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
 
@@ -119,8 +109,6 @@ impl Instruction {
     }
 
     fn skip_next_instruction_if_argument_differs_v_register_value(&self, cpu: &mut Cpu) {
-        println!("skip_next_instruction_if_argument_differs_v_register_value");
-
         let argument_value: u8 = (self.opcode as u8) & 0x00FF;
         let register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
 
@@ -132,8 +120,6 @@ impl Instruction {
     }
 
     fn skip_next_instruction_if_v_registers_values_are_the_same(&self, cpu: &mut Cpu) {
-        println!("skip_next_instruction_if_v_registers_values_are_the_same");
-
         let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
         let second_register_number: usize = (self.opcode as usize) >> 4 & 0x000F;
 
@@ -146,8 +132,6 @@ impl Instruction {
     }
 
     fn put_argument_value_on_v_register(&self, cpu: &mut Cpu) {
-        println!("put_argument_value_on_v_register");
-
         let argument_value: u8 = (self.opcode as u8) & 0x00FF;
         let register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
 
@@ -155,8 +139,6 @@ impl Instruction {
     }
 
     fn add_argument_value_to_v_register(&self, cpu: &mut Cpu) {
-        println!("add_argument_value_to_v_register");
-
         let argument_value: u8 = (self.opcode as u8) & 0x00FF;
         let register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
         let register_value: u8 = cpu.get_v_register(register_number);
@@ -168,8 +150,6 @@ impl Instruction {
     }
 
     fn put_v_register_value_on_other_v_register(&self, cpu: &mut Cpu) {
-        println!("put_v_register_value_on_other_v_register");
-
         let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
         let second_register_number: usize = (self.opcode as usize) >> 4 & 0x000F;
 
@@ -180,8 +160,6 @@ impl Instruction {
     }
 
     fn put_value_of_bitwise_or_operation_between_v_registers_on_first_passed_register(&self, cpu: &mut Cpu) {
-        println!("put_value_of_bitwise_or_operation_between_v_registers_on_first_passed_register");
-
         let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
         let second_register_number: usize = (self.opcode as usize) >> 4 & 0x000F;
 
@@ -195,8 +173,6 @@ impl Instruction {
     }
 
     fn put_value_of_bitwise_and_operation_between_v_registers_on_first_passed_register(&self, cpu: &mut Cpu) {
-        println!("put_value_of_bitwise_and_operation_between_v_registers_on_first_passed_register");
-
         let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
         let second_register_number: usize = (self.opcode as usize) >> 4 & 0x000F;
 
@@ -210,8 +186,6 @@ impl Instruction {
     }
 
     fn put_value_of_bitwise_xor_operation_between_v_registers_on_first_passed_register(&self, cpu: &mut Cpu) {
-        println!("put_value_of_bitwise_xor_operation_between_v_registers_on_first_passed_register");
-
         let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
         let second_register_number: usize = (self.opcode as usize) >> 4 & 0x000F;
 
@@ -225,8 +199,6 @@ impl Instruction {
     }
 
     fn put_value_of_sum_operation_between_v_registers_on_first_passed_register(&self, cpu: &mut Cpu) {
-        println!("put_value_of_sum_operation_between_v_registers_on_first_passed_register");
-
         let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
         let second_register_number: usize = (self.opcode as usize) >> 4 & 0x000F;
 
@@ -240,8 +212,6 @@ impl Instruction {
     }
 
     fn put_value_of_subtraction_operation_between_v_registers_on_first_passed_register(&self, cpu: &mut Cpu) {
-        println!("put_value_of_subtraction_operation_between_v_registers_on_first_passed_register");
-
         let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
         let second_register_number: usize = (self.opcode as usize) >> 4 & 0x000F;
 
@@ -255,8 +225,6 @@ impl Instruction {
     }
 
     fn put_value_of_bitwise_shift_right_operation_between_v_registers_on_first_passed_register(&self, cpu: &mut Cpu) {
-        println!("put_value_of_bitwise_shift_right_operation_between_v_registers_on_first_passed_register");
-
         let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
 
         let first_register_value: u8 = cpu.get_v_register(first_register_number);
@@ -268,8 +236,6 @@ impl Instruction {
     }
 
     fn put_value_of_inverted_subtraction_operation_between_v_registers_on_first_passed_register(&self, cpu: &mut Cpu) {
-        println!("put_value_of_inverted_subtraction_operation_between_v_registers_on_first_passed_register");
-
         let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
         let second_register_number: usize = (self.opcode as usize) >> 4 & 0x000F;
 
@@ -283,8 +249,6 @@ impl Instruction {
     }
 
     fn put_value_of_bitwise_shift_left_operation_between_v_registers_on_first_passed_register(&self, cpu: &mut Cpu) {
-        println!("put_value_of_bitwise_shift_left_operation_between_v_registers_on_first_passed_register");
-
         let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
 
         let first_register_value: u8 = cpu.get_v_register(first_register_number);
@@ -296,8 +260,6 @@ impl Instruction {
     }
 
     fn skip_next_instruction_if_v_registers_values_are_different(&self, cpu: &mut Cpu) {
-        println!("skip_next_instruction_if_v_registers_values_are_different");
-
         let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
         let second_register_number: usize = (self.opcode as usize) >> 4 & 0x000F;
 
@@ -310,16 +272,12 @@ impl Instruction {
     }
 
     fn put_argument_value_on_i_register(&self, cpu: &mut Cpu) {
-        println!("put_argument_value_on_i_register");
-
         let argument: u16 = self.opcode & 0xFFF;
 
         cpu.set_i_register(argument);
     }
 
     fn jump_to_argument_value_plus_v0(&self, cpu: &mut Cpu) {
-        println!("jump_to_argument_value_plus_v0");
-
         let argument: u16 = self.opcode & 0xFFF;
         let address: usize = (argument as usize) + (cpu.get_v_register(0x0) as usize);
 
@@ -327,8 +285,6 @@ impl Instruction {
     }
 
     fn put_value_of_bitwise_or_operation_between_argument_and_random_byte_on_passed_v_register(&self, cpu: &mut Cpu) {
-        println!("put_value_of_bitwise_or_operation_between_argument_and_random_byte_on_passed_v_register");
-
         let register_number: usize = ((self.opcode as usize) >> 8) & 0xF;
         let argument: u8 = (self.opcode as u8) & 0xFF;
         let random_byte: u8 = rand::thread_rng().gen_range(0x0..0xFF);
@@ -345,8 +301,6 @@ impl Instruction {
         memory: &mut Memory,
         interface: &mut Interface,
     ) {
-        println!("draw_byte_sprite_starting_at_location_i_on_register_stored_location");
-
         cpu.set_v_register(0xF, 0x0);
 
         let first_register_number: usize = (self.opcode as usize) >> 8 & 0x000F;
@@ -363,8 +317,6 @@ impl Instruction {
 
         for _ in 0..number_of_sprite_bytes {
             let byte: u8 = memory.get(memory_position);
-
-            println!("{:b} w: {:?} h: {:?}", byte, current_width_position, current_height_position);
 
             for shift_size in (0..8).rev() {
                 if current_width_position >= Interface::WIDTH || current_height_position >= Interface::HEIGHT {
@@ -391,8 +343,6 @@ impl Instruction {
     }
 
     fn skip_next_instruction_if_key_with_v_register_value_is_pressed(&self, interface: &mut Interface, cpu: &mut Cpu) {
-        println!("skip_next_instruction_if_key_with_v_register_value_is_pressed");
-
         let key_index: usize = (self.opcode as usize) >> 8 & 0xF;
 
         if interface.is_pressed(key_index) {
@@ -401,8 +351,6 @@ impl Instruction {
     }
 
     fn skip_next_instruction_if_key_with_v_register_value_is_not_pressed(&self, interface: &mut Interface, cpu: &mut Cpu) {
-        println!("skip_next_instruction_if_key_with_v_register_value_is_not_pressed");
-
         let key_index: usize = (self.opcode as usize) >> 8 & 0xF;
 
         if interface.is_not_pressed(key_index) {
@@ -411,8 +359,6 @@ impl Instruction {
     }
 
     fn put_delay_timer_value_on_v_register(&self, cpu: &mut Cpu) {
-        println!("put_delay_timer_value_on_v_register");
-
         let register_number: usize = (self.opcode as usize) >> 8 & 0xF;
 
         cpu.set_v_register(
@@ -422,8 +368,6 @@ impl Instruction {
     }
 
     fn wait_for_key_press_and_store_value_on_v_register(&self, cpu: &mut Cpu, interface: &mut Interface) {
-        println!("wait_for_key_press_and_store_value_on_v_register");
-
         let register_number: usize = (self.opcode as usize) >> 8 & 0xF;
 
         match interface.get_pressed_key() {
@@ -433,8 +377,6 @@ impl Instruction {
     }
 
     fn put_v_register_value_on_delay_timer(&self, cpu: &mut Cpu) {
-        println!("put_v_register_value_on_delay_timer");
-
         let register_number: usize = (self.opcode as usize) >> 8 & 0xF;
 
         cpu.set_delay_timer(
@@ -443,8 +385,6 @@ impl Instruction {
     }
 
     fn put_v_register_value_on_sound_timer(&self, cpu: &mut Cpu) {
-        println!("put_v_register_value_on_sound_timer");
-
         let register_number: usize = (self.opcode as usize) >> 8 & 0xF;
 
         cpu.set_sound_timer(
@@ -453,8 +393,6 @@ impl Instruction {
     }
 
     fn add_v_register_value_to_i_register_value(&self, cpu: &mut Cpu) {
-        println!("add_v_register_value_to_i_register_value");
-
         let register_number: usize = (self.opcode as usize) >> 8 & 0xF;
 
         let register_value: u16 = cpu.get_v_register(register_number) as u16;
@@ -465,7 +403,11 @@ impl Instruction {
     }
 
     fn put_location_of_sprite_for_v_register_digit_on_i_register(&self, cpu: &mut Cpu) {
-        println!("put_location_of_sprite_for_v_register_digit_on_i_register");
+        let register_number: u16 = self.opcode >> 8 & 0xF;
+
+        cpu.set_i_register(
+            0x50 + (register_number * 5)
+        );
     }
 
     fn put_bcd_representation_of_v_register_in_memory_locations_starting_on_i_register_location(
@@ -473,8 +415,6 @@ impl Instruction {
         cpu: &mut Cpu,
         memory: &mut Memory,
     ) {
-        println!("put_bcd_representation_of_v_register_in_memory_locations_starting_on_i_register_location");
-
         let register_number: usize = (self.opcode as usize) >> 8 & 0xF;
 
         let register_value: u8 = cpu.get_v_register(register_number);
@@ -510,8 +450,6 @@ impl Instruction {
         cpu: &mut Cpu,
         memory: &mut Memory,
     ) {
-        println!("put_values_of_v_registers_from_v0_to_passed_v_register_in_memory_starting_on_i_register_location");
-
         let final_register_number: usize = (self.opcode as usize) >> 8 & 0xF;
 
         let mut memory_location: usize = cpu.get_i_register() as usize;
@@ -530,8 +468,6 @@ impl Instruction {
         cpu: &mut Cpu,
         memory: &mut Memory,
     ) {
-        println!("put_values_on_v_registers_from_v0_to_passed_v_register_from_memory_starting_on_i_register_location");
-
         let final_register_number: usize = (self.opcode as usize) >> 8 & 0xF;
 
         let mut memory_location: usize = cpu.get_i_register() as usize;
@@ -1203,9 +1139,34 @@ mod tests {
         assert_eq!(result, cpu.get_i_register());
     }
 
-    #[test]
-    fn it_should_put_location_of_sprite_for_v_register_digit_on_i_register() {
-        let instruction: Instruction = Instruction::initialize(0xFC, 0x29);
+    #[test_case(0x0, 80 ; "with a 0 sprite")]
+    #[test_case(0x1, 85 ; "with a 1 sprite")]
+    #[test_case(0x2, 90 ; "with a 2 sprite")]
+    #[test_case(0x3, 95 ; "with a 3 sprite")]
+    #[test_case(0x4, 100 ; "with a 4 sprite")]
+    #[test_case(0x5, 105 ; "with a 5 sprite")]
+    #[test_case(0x6, 110 ; "with a 6 sprite")]
+    #[test_case(0x7, 115 ; "with a 7 sprite")]
+    #[test_case(0x8, 120 ; "with a 8 sprite")]
+    #[test_case(0x9, 125 ; "with a 9 sprite")]
+    #[test_case(0xA, 130 ; "with a A sprite")]
+    #[test_case(0xB, 135 ; "with a B sprite")]
+    #[test_case(0xC, 140 ; "with a C sprite")]
+    #[test_case(0xD, 145 ; "with a D sprite")]
+    #[test_case(0xE, 150 ; "with a E sprite")]
+    #[test_case(0xF, 155 ; "with a F sprite")]
+    fn it_should_put_location_of_sprite_for_v_register_digit_on_i_register(register_number: u8, position: u16) {
+        let mut instruction: Instruction = Instruction::initialize(
+            0xF0 + register_number, 
+            0x29
+        );
+        let mut cpu: Cpu = Cpu::initialize();
+        let mut memory: Memory = Memory::initialize();
+        let mut interface= Interface::default();
+
+        instruction.interpret(&mut cpu, &mut memory, &mut interface);
+
+        assert_eq!(position, cpu.get_i_register());
     }
 
     #[test]
