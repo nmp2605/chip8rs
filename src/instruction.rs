@@ -73,6 +73,8 @@ impl Instruction {
 
     fn clear_display(&self, interface: &mut Interface) {
         interface.clear();
+
+        interface.refresh();
     }
 
     fn return_from_subroutine(&self, cpu: &mut Cpu) {
@@ -340,6 +342,8 @@ impl Instruction {
             current_height_position += 1;
             current_width_position = initial_width_position;
         }
+
+        interface.refresh();
     }
 
     fn skip_next_instruction_if_key_with_v_register_value_is_pressed(&self, interface: &mut Interface, cpu: &mut Cpu) {
@@ -503,6 +507,9 @@ mod tests {
         let mut interface= Interface::default();
 
         interface.expect_clear()
+            .returning(|| ());
+
+        interface.expect_refresh()
             .returning(|| ());
 
         instruction.interpret(&mut cpu, &mut memory, &mut interface);
@@ -889,6 +896,9 @@ mod tests {
         interface.expect_draw_pixel().with(eq(true), eq(0x9), eq(0x0)).returning(|_, _, _| false);
         interface.expect_draw_pixel().with(eq(false), eq(0xA), eq(0x0)).returning(|_, _, _| false);
 
+        interface.expect_refresh()
+            .returning(|| ());
+
         instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0x0, cpu.get_v_register(0xF));
@@ -915,6 +925,9 @@ mod tests {
         interface.expect_draw_pixel().with(eq(false), eq(0x8), eq(0x0)).returning(|_, _, _| false);
         interface.expect_draw_pixel().with(eq(true), eq(0x9), eq(0x0)).returning(|_, _, _| false);
         interface.expect_draw_pixel().with(eq(false), eq(0xA), eq(0x0)).returning(|_, _, _| false);
+
+        interface.expect_refresh()
+            .returning(|| ());
 
         instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
@@ -953,6 +966,9 @@ mod tests {
         interface.expect_draw_pixel().with(eq(true), eq(0x9), eq(0x1)).returning(|_, _, _| false);
         interface.expect_draw_pixel().with(eq(true), eq(0xA), eq(0x1)).returning(|_, _, _| false);
 
+        interface.expect_refresh()
+            .returning(|| ());
+
         instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0x0, cpu.get_v_register(0xF));
@@ -980,6 +996,9 @@ mod tests {
         interface.expect_draw_pixel().with(eq(true), eq(0x9), eq(0x0)).returning(|_, _, _| false);
         interface.expect_draw_pixel().with(eq(false), eq(0xA), eq(0x0)).returning(|_, _, _| false);
 
+        interface.expect_refresh()
+            .returning(|| ());
+
         instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
         assert_eq!(0x0, cpu.get_v_register(0xF));
@@ -1002,6 +1021,9 @@ mod tests {
         interface.expect_draw_pixel().with(eq(true), eq(61), eq(0x0)).returning(|_, _, _| false);
         interface.expect_draw_pixel().with(eq(true), eq(62), eq(0x0)).returning(|_, _, _| false);
         interface.expect_draw_pixel().with(eq(true), eq(63), eq(0x0)).returning(|_, _, _| false);
+
+        interface.expect_refresh()
+            .returning(|| ());
 
         instruction.interpret(&mut cpu, &mut memory, &mut interface);
 

@@ -35,8 +35,6 @@ impl Motherboard {
             );
 
             self.cpu.decrease_timers_on_tick();
-
-            self.interface.refresh();
         }
     }
 }
