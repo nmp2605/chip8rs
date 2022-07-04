@@ -347,7 +347,8 @@ impl Instruction {
     }
 
     fn skip_next_instruction_if_key_with_v_register_value_is_pressed(&self, interface: &mut Interface, cpu: &mut Cpu) {
-        let key_index: usize = (self.opcode as usize) >> 8 & 0xF;
+        let register_number: usize = (self.opcode as usize) >> 8 & 0xF;
+        let key_index: usize = cpu.get_v_register(register_number) as usize;
 
         if interface.is_pressed(key_index) {
             cpu.increase_program_counter(2);
@@ -355,7 +356,8 @@ impl Instruction {
     }
 
     fn skip_next_instruction_if_key_with_v_register_value_is_not_pressed(&self, interface: &mut Interface, cpu: &mut Cpu) {
-        let key_index: usize = (self.opcode as usize) >> 8 & 0xF;
+        let register_number: usize = (self.opcode as usize) >> 8 & 0xF;
+        let key_index: usize = cpu.get_v_register(register_number) as usize;
 
         if interface.is_not_pressed(key_index) {
             cpu.increase_program_counter(2);
@@ -1038,7 +1040,9 @@ mod tests {
         let mut memory: Memory = Memory::initialize();
         let mut interface= Interface::default();
 
-        interface.expect_is_pressed().with(eq(0xA)).returning(move |_| press);
+        cpu.set_v_register(0xA, 0x1);
+
+        interface.expect_is_pressed().with(eq(0x1)).returning(move |_| press);
 
         instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
@@ -1053,7 +1057,9 @@ mod tests {
         let mut memory: Memory = Memory::initialize();
         let mut interface= Interface::default();
 
-        interface.expect_is_not_pressed().with(eq(0xA)).returning(move |_| press);
+        cpu.set_v_register(0xA, 0x2);
+
+        interface.expect_is_not_pressed().with(eq(0x2)).returning(move |_| press);
 
         instruction.interpret(&mut cpu, &mut memory, &mut interface);
 
