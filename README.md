@@ -7,9 +7,9 @@ What's Still Missing
 
 The interpreter is a work in progress. It are still some key parts missing, such as:
 
-- Precise timers
+- Sound
 - Enhance performance
-- Proper implementation of inputs
+- Debugging on some popular games
 
 Requirements
 ------------
