@@ -62,7 +62,7 @@ impl Interface {
 
         self.buffer[index] = color;
 
-        old_state == state
+        old_state == true && state == false
     }
 
     pub fn is_pressed(&self, key_code: usize) -> bool {
