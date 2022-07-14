@@ -8,8 +8,7 @@ What's Still Missing
 The interpreter is a work in progress. It are still some key parts missing, such as:
 
 - Sound
-- Enhance performance
-- Debugging on some popular games
+- Enhance performance and playing experience
 
 Requirements
 ------------
